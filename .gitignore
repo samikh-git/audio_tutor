@@ -1,3 +1,6 @@
 .env
  
 tests/higgs-audio
+__pycache__/
+*.py[cod]
+*$py.class
