@@ -22,7 +22,7 @@ voices  = {
 def speak(script: str, language: str = "English"):
     """ Streams the voice generated voiceover of the script.
     Args: 
-        sript: what the voice will read. 
+        script: what the voice will read. 
     """
     audio_stream = elevenlabs.text_to_speech.stream(
         text= script,
@@ -31,7 +31,6 @@ def speak(script: str, language: str = "English"):
         output_format="mp3_44100_128",
     )
     stream(audio_stream)
-
 
 #testing
 if __name__ == "__main__":
