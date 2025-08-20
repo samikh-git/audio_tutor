@@ -1,20 +1,18 @@
-
 import queue
 import re
 import sys
 
 from google.cloud import speech
+from google.protobuf import duration_pb2
 
 import pyaudio
-
-from tutor import converse
-
-from langchain_core.messages import AIMessage
 
 # Audio recording parameters
 RATE = 16000
 CHUNK = int(RATE / 10)  # 100ms
 
+TIMEOUT = duration_pb2.Duration()
+TIMEOUT.seconds = 1
 
 class MicrophoneStream:
     """Opens a recording stream as a generator yielding the audio chunks."""
@@ -114,7 +112,6 @@ class MicrophoneStream:
 
             yield b"".join(data)
 
-
 def listen_print_loop(responses: object) -> str:
     """Iterates through server responses and prints them.
 
@@ -136,8 +133,6 @@ def listen_print_loop(responses: object) -> str:
     Returns:
         The transcribed text.
     """
-    num_chars_printed = 0
-    running_transcript = ""
     for response in responses:
         if not response.results:
             continue
@@ -151,50 +146,31 @@ def listen_print_loop(responses: object) -> str:
 
         # Display the transcription of the top alternative.
         transcript = result.alternatives[0].transcript
-
-        # Display interim results, but with a carriage return at the end of the
-        # line, so subsequent lines will overwrite them.
-        #
-        # If the previous result was longer than this one, we need to print
-        # some extra spaces to overwrite the previous result
-        overwrite_chars = " " * (num_chars_printed - len(transcript))
-
-        if not result.is_final:
-            sys.stdout.write(transcript + overwrite_chars + "\r")
-            sys.stdout.flush()
-
-            num_chars_printed = len(transcript)
-
-        else:
-            print(transcript + overwrite_chars)
-            running_transcript = running_transcript + " " + transcript
-
-            # Exit recognition if any of the transcribed phrases could be
-            # one of our keywords.
-            if re.search(r"\b(exit|quit|over|stop)\b", transcript, re.I):
-                print("Exiting..")
-                break
-
-            num_chars_printed = 0
-
-    return running_transcript
-
-
-def transcribe() -> None:
-    """Transcribe speech from audio file."""
+        #print(f"You say: {transcript}")
+        if result.is_final:
+            return transcript
+    
+def transcribe(language: str = "en-US") -> str:
+    """Transcribe speech using pyaudio microphone stream. 
+    Args: 
+        language: the language code for the transcription
+    """
     # See http://g.co/cloud/speech/docs/languages
     # for a list of supported languages.
-    language_code = "en-US"  # a BCP-47 language tag
+    language_code = language  # a BCP-47 language tag
 
     client = speech.SpeechClient()
     config = speech.RecognitionConfig(
         encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
         sample_rate_hertz=RATE,
         language_code=language_code,
+        enable_automatic_punctuation=True,
     )
 
     streaming_config = speech.StreamingRecognitionConfig(
-        config=config, interim_results=True
+        config=config, 
+        interim_results=True, 
+        voice_activity_timeout= speech.StreamingRecognitionConfig.VoiceActivityTimeout(mapping=None, speech_end_timeout = TIMEOUT, ignore_unknown_fields=False)
     )
 
     with MicrophoneStream(RATE, CHUNK) as stream:
@@ -209,11 +185,8 @@ def transcribe() -> None:
         # Now, put the transcription responses to use.
         transcript = listen_print_loop(responses)
         print(transcript)
-        return converse(transcript)
+        return transcript
 
-
+#test
 if __name__ == "__main__":
-    while True:
-        for chunk, metadata in transcribe():
-            if isinstance(chunk, AIMessage):
-                print(chunk.content, end = " ")
+    transcribe("fr-FR")
