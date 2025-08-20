@@ -1,3 +1,9 @@
+"""Utilities to expose database helpers to service modules.
+
+Dynamically adjusts `sys.path` so that `server/database/database.py` can be
+imported as `database` from sibling service modules, and re-exports the global
+`db_manager`.
+"""
 import sys 
 import os
 

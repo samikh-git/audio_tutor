@@ -1,3 +1,10 @@
+"""Conversational tutor powered by Gemini via LangChain/LangGraph.
+
+This module compiles a LangGraph state machine that maintains conversation
+context in a SQLite checkpoint store. The `converse` function streams AI
+messages for a given user query and language.
+"""
+
 import sqlite3
 from dotenv import load_dotenv
 
@@ -38,15 +45,27 @@ prompt_template = ChatPromptTemplate.from_messages(
 )
 
 class State(TypedDict):
+    """LangGraph state for the tutor.
+
+    Attributes:
+        messages: Conversation history accumulated by LangGraph.
+        language: Target language for the tutor responses.
+    """
     messages: Annotated[Sequence[BaseMessage], add_messages]
     language: str
 
-# Define a new graph
 workflow = StateGraph(state_schema=State)
 
 
-# Define the function that calls the model
-def call_model(state: State): 
+def call_model(state: State):
+    """Invoke the chat model with the compiled prompt and history.
+
+    Args:
+        state (State): Current graph state including messages and language.
+
+    Returns:
+        dict: Mapping with the new AI message under `messages`.
+    """
     # Create the prompt with all conversation history
     prompt = prompt_template.invoke({"language": state["language"], "messages": state["messages"]})
     
@@ -56,27 +75,28 @@ def call_model(state: State):
     return {"messages": response}
 
 
-# Define the (single) node in the graph
 workflow.add_edge(START, "model")
 workflow.add_node("model", call_model)
 
-# Add memory
 memory = SqliteSaver(db)
 app = workflow.compile(checkpointer=memory)
 
 def converse(query: str, language: str = "English", config: dict = {"configurable": {"thread_id": "default"}}):
-    """ Chat with the tutor with conversation memory.
+    """Stream tutor messages for a given user input with persistent memory.
+
     Args:
-        query: The user's message
-        language: The language to respond in
-        thread_id: Unique identifier for the conversation thread
+        query (str): The user's latest message.
+        language (str): Language the tutor should respond in.
+        config (dict): LangGraph configuration containing `thread_id`.
+
+    Returns:
+        Iterator[Tuple[BaseMessage, Any]]: Stream of messages produced by the graph.
     """
     input_messages = [HumanMessage(content=query)]
     return app.stream(
         {"messages": input_messages, "language": language}, config, stream_mode="messages",
     )
 
-#test
 if __name__ == "__main__":
     config = {"configurable": {"thread_id": "Default"}}
     for chunk, _ in converse("Hello there. What is my name?"):

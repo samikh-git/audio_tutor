@@ -1,3 +1,9 @@
+"""Text-to-Speech service using ElevenLabs streaming API.
+
+Loads the ElevenLabs client from environment variables and provides a `speak`
+function to stream synthesized audio for a given script in a selected
+language. Voice IDs are mapped per supported language.
+"""
 from dotenv import load_dotenv
 from elevenlabs.client import ElevenLabs
 from elevenlabs import stream
@@ -20,18 +26,22 @@ voices  = {
 }
 
 def speak(script: str, language: str = "English"):
-    """ Streams the voice generated voiceover of the script.
-    Args: 
-        script: what the voice will read. 
+    """Stream synthesized speech for the provided text.
+
+    Args:
+        script (str): Text for the voice to read.
+        language (str): One of the keys defined in `voices` mapping.
+
+    Raises:
+        KeyError: If the language is not in the `voices` mapping.
     """
     audio_stream = elevenlabs.text_to_speech.stream(
         text= script,
         voice_id= voices[language],
-        model_id="eleven_turbo_v2_5",
+        model_id="eleven_flash_v2_5",
         output_format="mp3_44100_128",
     )
     stream(audio_stream)
 
-#testing
 if __name__ == "__main__":
     speak("Hey There!")

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""
-Conversation History Viewer
-Utility to view and manage conversation history in the database
+"""Conversation History Viewer utilities.
+
+This script provides simple CLI commands to list recent conversations,
+inspect a specific conversation, or view a user's conversation history.
 """
 
 import sys
@@ -13,7 +14,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'database'))
 from database import db_manager
 
 def view_conversations():
-    """View all conversations in the database"""
+    """Print recent conversations and database statistics to stdout."""
     stats = db_manager.get_database_stats()
     
     print("=== Audio Tutor Database Statistics ===")
@@ -53,7 +54,11 @@ def view_conversations():
     print()
 
 def view_conversation_detail(conversation_id):
-    """View detailed information about a specific conversation"""
+    """Print a specific conversation's metadata and full transcript.
+
+    Args:
+        conversation_id (int): Primary key of the conversation to display.
+    """
     conversation = db_manager.get_conversation_by_id(conversation_id)
     
     if not conversation:
@@ -70,7 +75,11 @@ def view_conversation_detail(conversation_id):
     print(conversation['transcript'])
 
 def view_user_conversations(user_id):
-    """View all conversations for a specific user"""
+    """Print a summary list of a user's recent conversations.
+
+    Args:
+        user_id (str): Identifier used when saving conversations.
+    """
     conversations = db_manager.get_conversations_by_user(user_id, limit=10)
     
     if not conversations:
@@ -87,7 +96,13 @@ def view_user_conversations(user_id):
         print("-" * 80)
 
 def main():
-    """Main function to handle command line arguments"""
+    """Entry point for the CLI dispatcher.
+
+    Usage:
+        python view_conversations.py list
+        python view_conversations.py detail <id>
+        python view_conversations.py user <user_id>
+    """
     if len(sys.argv) < 2:
         print("Usage:")
         print("  python view_conversations.py list                    # List all conversations")

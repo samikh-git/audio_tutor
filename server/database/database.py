@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""
-Database utilities for Audio Tutor
-Handles conversation history and database operations
+"""Database utilities for Audio Tutor.
+
+Exposes a `DatabaseManager` class with helpers to create tables and perform
+CRUD operations on the `conversation_history` SQLite database. A global
+`db_manager` instance is created for convenience.
 """
 
 import sqlite3
@@ -10,7 +12,11 @@ from typing import List, Dict, Optional, Tuple
 import os
 
 class DatabaseManager:
-    """Manages database operations for conversation history"""
+    """Manage conversation history persistence in SQLite.
+
+    If `db_path` is omitted, a database named `conversation_history.db` in the
+    same directory as this module is used.
+    """
     
     def __init__(self, db_path: str = None):
         if db_path is None:
@@ -22,7 +28,7 @@ class DatabaseManager:
         self._ensure_database_exists()
     
     def _ensure_database_exists(self):
-        """Ensure the database and required tables exist"""
+        """Create the backing database and required tables if missing."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
@@ -48,7 +54,16 @@ class DatabaseManager:
         conn.close()
     
     def save_conversation(self, user_id: str, session_date: date, transcript: str) -> int:
-        """Save a conversation session to the database"""
+        """Insert a conversation session.
+
+        Args:
+            user_id (str): User identifier.
+            session_date (date): Date of the session.
+            transcript (str): Full transcript including prompts and replies.
+
+        Returns:
+            int: The auto-incremented conversation id.
+        """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
@@ -64,7 +79,15 @@ class DatabaseManager:
         return conversation_id
     
     def get_conversations_by_user(self, user_id: str, limit: int = 10) -> List[Dict]:
-        """Get recent conversations for a specific user"""
+        """Fetch recent conversations for a user.
+
+        Args:
+            user_id (str): User identifier.
+            limit (int): Maximum number of rows to return.
+
+        Returns:
+            List[Dict]: List of conversation records.
+        """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
@@ -90,7 +113,14 @@ class DatabaseManager:
         return conversations
     
     def get_conversation_by_id(self, conversation_id: int) -> Optional[Dict]:
-        """Get a specific conversation by ID"""
+        """Fetch a conversation by its primary key.
+
+        Args:
+            conversation_id (int): Primary key.
+
+        Returns:
+            Optional[Dict]: Conversation row or None if not found.
+        """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
@@ -114,7 +144,14 @@ class DatabaseManager:
         return None
     
     def delete_conversation(self, conversation_id: int) -> bool:
-        """Delete a conversation by ID"""
+        """Delete a conversation by its primary key.
+
+        Args:
+            conversation_id (int): Primary key.
+
+        Returns:
+            bool: True if a row was deleted.
+        """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
@@ -127,7 +164,11 @@ class DatabaseManager:
         return deleted
     
     def get_database_stats(self) -> Dict:
-        """Get database statistics"""
+        """Return basic database statistics and size information.
+
+        Returns:
+            Dict: Stats for total conversations, unique users, and DB size.
+        """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         

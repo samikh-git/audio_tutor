@@ -1,6 +1,15 @@
-from dotenv import load_dotenv
+"""Analyzer agent for generating language learning reports.
 
-from langchain.chat_models import init_chat_model
+This module configures a LangGraph pipeline that:
+- retrieves prior conversations for a specific user from a vector store
+- analyzes the content with Gemini 2.5 Pro
+- returns a feedback/report message
+
+It exposes helper functions to add/remove documents to the vector store and a
+`create_report` function to produce a report for a given user id.
+"""
+
+from dotenv import load_dotenv
 
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
 from langchain_milvus import Milvus
@@ -12,7 +21,7 @@ from typing_extensions import List, TypedDict
 
 from langchain_core.tools import tool
 
-from langgraph.graph import MessagesState, StateGraph
+from langgraph.graph import StateGraph
 
 from langchain_core.messages import SystemMessage, HumanMessage
 from langgraph.prebuilt import ToolNode
@@ -60,6 +69,12 @@ vector_store = Milvus(
 )
 
 def add_document(page_content: str, user_id: str):
+    """Add a conversation transcript to the vector store under a user namespace.
+
+    Args:
+        page_content (str): Full text of the conversation or report.
+        user_id (str): Namespace used to partition documents by user.
+    """
     doc = [Document(
         page_content=page_content,
         metadata={"namespace": user_id}
@@ -68,9 +83,15 @@ def add_document(page_content: str, user_id: str):
     vector_store.add_documents(documents = doc, ids=uuids)
 
 def remove_document(uuid: str):
+    """Remove a document from the vector store by its UUID.
+
+    Args:
+        uuid (str): Primary key used at insert time.
+    """
     vector_store.delete(ids=[uuid])
 
 class State(TypedDict):
+    """Graph state for the analyzer agent."""
     messages: List
     question: str
     context: List[Document]
@@ -81,7 +102,16 @@ graph_builder = StateGraph(State)
 
 @tool
 def retrieve(query: str, user_id: str):
-    """Retrieve conversation history for a specific user_id. Use this tool to get the student's conversation data before analyzing their performance."""
+    """Retrieve conversation history for a specific user.
+
+    Args:
+        query (str): Semantic query used to guide retrieval.
+        user_id (str): Namespace identifying the student.
+
+    Returns:
+        str: A serialized text with top-k retrieved conversations or a message
+             indicating no data/errors.
+    """
     try:
         retrieved_docs = vector_store.similarity_search(query, k=5, search_kwargs={"expr": f'namespace == "{user_id}"'})
         if not retrieved_docs:
@@ -95,9 +125,18 @@ def retrieve(query: str, user_id: str):
     except Exception as e:
         return f"Error retrieving data: {str(e)}"
 
-# Step 1: Generate an AIMessage that may include a tool-call to be sent.
 def query_or_respond(state: State):
-    """Generate tool call for retrieval or respond."""
+    """Decide whether to call the retrieval tool or respond directly.
+
+    Binds the `retrieve` tool to the LLM, invokes it on the running message
+    history, and forwards the tool call with `user_id` wired into the args.
+
+    Args:
+        state (State): Current graph state.
+
+    Returns:
+        dict: Mapping with the new AI message (possibly with tool call).
+    """
     llm_with_tools = llm.bind_tools([retrieve])
     response = llm_with_tools.invoke(state["messages"])
     
@@ -110,13 +149,21 @@ def query_or_respond(state: State):
     return {"messages": [response]}
 
 
-# Step 2: Execute the retrieval.
 tools = ToolNode([retrieve])
 
 
-# Step 3: Generate a response using the retrieved content.
 def generate(state: State):
-    """Generate answer."""
+    """Generate an analysis response using retrieved conversation context.
+
+    Collates recent ToolMessages (retrieval output), builds a system prompt with
+    the retrieved content, adds conversation messages, and invokes the LLM.
+
+    Args:
+        state (State): Current graph state after any tool execution.
+
+    Returns:
+        dict: Mapping with the generated AI message under `messages`.
+    """
     # Get generated ToolMessages
     recent_tool_messages = []
     for message in reversed(state["messages"]):
@@ -180,6 +227,14 @@ graph_builder.add_edge("generate", END)
 analyzer = graph_builder.compile()
 
 def create_report(user_id: str):
+    """Create a feedback report for a user by retrieving their history.
+
+    Args:
+        user_id (str): Identifier used to retrieve the user's conversations.
+
+    Returns:
+        str: The analyzer's final response text (report).
+    """
     input_messages = [HumanMessage(content=PROMPT)]
     return analyzer.invoke(
         {
@@ -192,6 +247,5 @@ def create_report(user_id: str):
     )["messages"][-1].content
 
 
-#test
 if __name__ == "__main__":
     print(create_report("1"))

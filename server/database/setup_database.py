@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""
-Database setup script for Audio Tutor
-Creates the required tables and cleans up database organization
+"""Database setup script for Audio Tutor.
+
+Creates the `conversation_history` table and index if they do not exist, and
+migrates rows from a legacy `conv_hist` table when present.
 """
 
 import sqlite3
@@ -9,7 +10,11 @@ import os
 from datetime import datetime
 
 def setup_database():
-    """Create the conversation history table and clean up database"""
+    """Create tables, indexes, and migrate any legacy data.
+
+    This is idempotent. It can safely be re-run without duplicating schema or
+    data. Outputs the resulting tables and schema to stdout.
+    """
     
     # Connect to the database
     db_path = "./conversation_history.db"

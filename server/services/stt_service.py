@@ -1,6 +1,15 @@
+"""Streaming microphone Speech-to-Text using Google Cloud Speech.
+
+Provides a context manager `MicrophoneStream` to capture audio from the
+system microphone and a `transcribe` function that performs streaming
+recognition with voice-activity end timeout.
+
+Requirements:
+- PyAudio for audio capture
+- Google Cloud credentials via `GOOGLE_APPLICATION_CREDENTIALS`
+"""
+
 import queue
-import re
-import sys
 
 from google.cloud import speech
 from google.protobuf import duration_pb2
@@ -15,7 +24,15 @@ TIMEOUT = duration_pb2.Duration()
 TIMEOUT.seconds = 1
 
 class MicrophoneStream:
-    """Opens a recording stream as a generator yielding the audio chunks."""
+    """Context manager that captures microphone audio and yields byte chunks.
+
+    The audio capture runs asynchronously and collected frames are exposed via
+    a thread-safe queue. Use the `generator()` to iterate audio chunks.
+
+    Args:
+        rate (int): Sample rate in Hz. Defaults to RATE.
+        chunk (int): Frames per buffer to read from the device.
+    """
 
     def __init__(self: object, rate: int = RATE, chunk: int = CHUNK) -> None:
         """The audio -- and generator -- is guaranteed to be on the main thread."""
@@ -27,18 +44,18 @@ class MicrophoneStream:
         self.closed = True
 
     def __enter__(self: object) -> object:
+        """Open the PyAudio stream and start collecting audio frames.
+
+        Returns:
+            MicrophoneStream: The active stream context.
+        """
         self._audio_interface = pyaudio.PyAudio()
         self._audio_stream = self._audio_interface.open(
             format=pyaudio.paInt16,
-            # The API currently only supports 1-channel (mono) audio
-            # https://goo.gl/z757pE
             channels=1,
             rate=self._rate,
             input=True,
             frames_per_buffer=self._chunk,
-            # Run the audio stream asynchronously to fill the buffer object.
-            # This is necessary so that the input device's buffer doesn't
-            # overflow while the calling thread makes network requests, etc.
             stream_callback=self._fill_buffer,
         )
 
@@ -52,7 +69,7 @@ class MicrophoneStream:
         value: object,
         traceback: object,
     ) -> None:
-        """Closes the stream, regardless of whether the connection was lost or not."""
+        """Close the audio stream and signal the generator to finish."""
         self._audio_stream.stop_stream()
         self._audio_stream.close()
         self.closed = True
@@ -68,39 +85,32 @@ class MicrophoneStream:
         time_info: object,
         status_flags: object,
     ) -> object:
-        """Continuously collect data from the audio stream, into the buffer.
+        """Collect data from the device into the internal buffer.
 
         Args:
-            in_data: The audio data as a bytes object
-            frame_count: The number of frames captured
-            time_info: The time information
-            status_flags: The status flags
+            in_data (bytes): Raw audio bytes provided by PyAudio callback.
+            frame_count (int): Number of frames captured.
+            time_info (object): Timestamp metadata from PyAudio.
+            status_flags (object): Status flags from PyAudio.
 
         Returns:
-            The audio data as a bytes object
+            tuple: (None, pyaudio.paContinue) per PyAudio callback contract.
         """
         self._buff.put(in_data)
         return None, pyaudio.paContinue
 
     def generator(self: object) -> object:
-        """Generates audio chunks from the stream of audio data in chunks.
-
-        Args:
-            self: The MicrophoneStream object
+        """Yield concatenated audio byte chunks until the stream is closed.
 
         Returns:
-            A generator that outputs audio chunks.
+            Generator[bytes, None, None]: Iterator over raw audio chunks.
         """
         while not self.closed:
-            # Use a blocking get() to ensure there's at least one chunk of
-            # data, and stop iteration if the chunk is None, indicating the
-            # end of the audio stream.
             chunk = self._buff.get()
             if chunk is None:
                 return
             data = [chunk]
 
-            # Now consume whatever other data's still buffered.
             while True:
                 try:
                     chunk = self._buff.get(block=False)
@@ -113,51 +123,43 @@ class MicrophoneStream:
             yield b"".join(data)
 
 def listen_print_loop(responses: object) -> str:
-    """Iterates through server responses and prints them.
+    """Consume streaming recognition responses and return the final transcript.
 
-    The responses passed is a generator that will block until a response
-    is provided by the server.
-
-    Each response may contain multiple results, and each result may contain
-    multiple alternatives; for details, see https://goo.gl/tjCPAU.  Here we
-    print only the transcription for the top alternative of the top result.
-
-    In this case, responses are provided for interim results as well. If the
-    response is an interim one, print a line feed at the end of it, to allow
-    the next result to overwrite it, until the response is a final one. For the
-    final one, print a newline to preserve the finalized transcription.
+    Iterates over streaming responses until a final result is produced, then
+    returns the top alternative's transcript.
 
     Args:
-        responses: List of server responses
+        responses (Iterable): StreamingRecognize responses iterator.
 
     Returns:
-        The transcribed text.
+        str: Final transcribed text for the current utterance.
     """
     for response in responses:
         if not response.results:
             continue
 
-        # The `results` list is consecutive. For streaming, we only care about
-        # the first result being considered, since once it's `is_final`, it
-        # moves on to considering the next utterance.
         result = response.results[0]
         if not result.alternatives:
             continue
 
-        # Display the transcription of the top alternative.
         transcript = result.alternatives[0].transcript
-        #print(f"You say: {transcript}")
         if result.is_final:
             return transcript
     
 def transcribe(language: str = "en-US") -> str:
-    """Transcribe speech using pyaudio microphone stream. 
-    Args: 
-        language: the language code for the transcription
+    """Perform streaming speech recognition from the default microphone.
+
+    Opens a `MicrophoneStream`, sends audio to Google Cloud Speech with
+    automatic punctuation and a short voice-activity end timeout, and returns
+    the first finalized transcript.
+
+    Args:
+        language (str): BCP‑47 language code (e.g., "en-US", "fr-FR").
+
+    Returns:
+        str: The recognized text for the user's utterance.
     """
-    # See http://g.co/cloud/speech/docs/languages
-    # for a list of supported languages.
-    language_code = language  # a BCP-47 language tag
+    language_code = language
 
     client = speech.SpeechClient()
     config = speech.RecognitionConfig(
@@ -182,11 +184,9 @@ def transcribe(language: str = "en-US") -> str:
 
         responses = client.streaming_recognize(streaming_config, requests)
 
-        # Now, put the transcription responses to use.
         transcript = listen_print_loop(responses)
         print(transcript)
         return transcript
 
-#test
 if __name__ == "__main__":
     transcribe("fr-FR")

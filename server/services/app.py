@@ -1,3 +1,13 @@
+"""CLI entrypoint for the interactive voice tutoring session.
+
+Runs a microphone-driven loop that:
+- prompts for `user_id` and language selection
+- captures speech and transcribes it via Google STT
+- streams tutor responses via Gemini with memory
+- plays synthesized audio via ElevenLabs TTS
+- saves transcripts to SQLite and vector DB, and generates a report
+"""
+
 import re
 
 from numpy import true_divide 
@@ -19,6 +29,11 @@ from utils import db_manager
 import random
 
 def select_lang():
+    """Prompt the user to select a target language for the session.
+
+    Returns:
+        tuple[str, str]: A pair of (language_name, bcp47_code).
+    """
     languages = {
         1: ("English", "en-UK"), 
         2: ("French", "fr-FR"), 
@@ -41,7 +56,18 @@ def select_lang():
 
 
 def session():
-    #speak("Hi there! Please state your user ID.")
+    """Run an interactive voice tutoring session in the terminal.
+
+    Flow:
+    1) Ask for `user_id` and language selection
+    2) Loop: transcribe user speech, stream tutor reply, and TTS playback
+    3) On "stop", persist transcript, generate an analysis report, and exit
+
+    Side effects:
+        - Saves conversation into SQLite
+        - Indexes transcript and report into the vector database
+    """
+    speak("Hi there! Please state your user ID.")
     user_id  = str(input("Hi there! Please state your user ID. \n")).strip() or random.randint(300,2000)
     config = {"configurable": {"thread_id": user_id}}
     language_tpl = select_lang()
