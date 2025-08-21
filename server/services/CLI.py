@@ -10,8 +10,6 @@ Runs a microphone-driven loop that:
 
 import re
 
-from numpy import true_divide 
-
 from conversational_tutor import converse
 
 from analyzer_tutor import add_document, create_report
@@ -67,6 +65,8 @@ def session():
         - Saves conversation into SQLite
         - Indexes transcript and report into the vector database
     """
+    print("====================== WELCOME TO AUDIO TUTOR CLI! ======================= ")
+    print("\n \n")
     speak("Hi there! Please state your user ID.")
     user_id  = str(input("Hi there! Please state your user ID. \n")).strip() or random.randint(300,2000)
     config = {"configurable": {"thread_id": user_id}}

@@ -1,111 +1,247 @@
-## Audio Tutor
+# Audio Tutor
 
-A voice-first language tutoring project. It lets you speak with an AI tutor, streams replies back with text-to-speech, and saves full session transcripts for analysis.
+A comprehensive voice-first language tutoring platform with both CLI and mobile interfaces. Practice speaking with an AI tutor, get real-time feedback, and track your learning progress across multiple languages.
 
-### What's implemented
-- **Interactive CLI tutor session** (`server/services/app.py`)
-  - Microphone input with Google Cloud Speech-to-Text (streaming, voice-activity end).
-  - Tutor replies via Gemini 2.0 Flash (LangChain + LangGraph) with per-user conversation memory stored in SQLite.
-  - ElevenLabs streaming Text-to-Speech with language-specific voices.
-  - Language selection, per-session transcript accumulation, and graceful stop by saying "stop".
-  - Saves full transcript to SQLite and also to a vector store, then generates an analysis report and saves it as well.
-- **Conversation storage** (`server/database/database.py`)
-  - SQLite DB for conversation history with helpers to save/query/delete and fetch stats.
-- **Vector database and analysis** (`server/services/analyzer_tutor.py`)
-  - Milvus (milvus-lite) via `langchain-milvus` for semantic retrieval, partitioned by user id.
-  - Analyzer uses Gemini 2.5 Pro with a retrieval tool to fetch a user’s past conversations and produce a feedback report.
-- **Utilities**
-  - View recent conversations, details, or by user via `server/view_conversations.py`.
-- **API placeholder** (`server/server.py`)
-  - Minimal FastAPI app with a root route. Not yet wired to the CLI tutor flow.
-- **Mobile client (prototype)** (`client/`)
-  - Expo React Native app that records audio and can play it back locally. Not yet integrated with the server or STT/TTS services.
+## Features
 
-### Project structure (high level)
+### Mobile Client (React Native)
+- **Multi-language Support**: Practice Spanish, French, German, Italian, Portuguese, Japanese, Korean, and Chinese
+- **Interactive Conversations**: Real-time audio recording and playback with AI tutor responses
+- **User Profiles**: Complete user management with profile editing and password management
+- **Conversation History**: View past conversations with detailed transcripts and learning reports
+- **Modern UI**: Clean, intuitive interface with smooth animations and consistent theming
+
+### Server Backend
+- **Interactive CLI Tutor**: Full voice conversation with AI tutor via command line
+- **Speech-to-Text**: Google Cloud Speech-to-Text integration for real-time transcription
+- **Text-to-Speech**: ElevenLabs integration for natural-sounding tutor responses
+- **AI Tutor**: Gemini 2.0 Flash powered conversations with conversation memory
+- **Conversation Storage**: SQLite database for conversation history and user data
+- **Vector Database**: Milvus integration for semantic search and analysis
+- **Learning Analytics**: AI-powered analysis reports for learning progress
+
+## Mobile App Screens
+
+1. **Login/Signup**: User authentication with email and password
+2. **Main Screen**: Dashboard with recent conversations and new conversation button
+3. **Language Selector**: Interactive picker wheel for language selection
+4. **Conversation Screen**: Real-time audio recording and chat interface
+5. **Conversation Detail**: View transcripts and learning reports
+6. **Profile Screen**: User information and account management
+7. **Edit Profile**: Form-based profile editing with validation
+
+## Project Structure
+
 ```
 audio_tutor/
-  client/                # Expo app (record/playback prototype)
-  server/
-    database/            # SQLite + vector DB, setup script, docs
-    services/            # CLI session, STT, TTS, tutor, analyzer, utils
-    server.py            # FastAPI app (placeholder)
-  README.md
+├── client/                     # React Native mobile app
+│   ├── screens/               # App screens
+│   │   ├── LoginScreen.tsx
+│   │   ├── SignupScreen.tsx
+│   │   ├── MainScreen.tsx
+│   │   ├── LanguageSelectorScreen.tsx
+│   │   ├── ConversationScreen.tsx
+│   │   ├── ConversationDetailScreen.tsx
+│   │   ├── ProfileScreen.tsx
+│   │   └── EditProfileScreen.tsx
+│   ├── App.tsx               # Main app component
+│   └── package.json
+├── server/                    # Python backend
+│   ├── database/             # Database management
+│   │   ├── database.py
+│   │   ├── setup_database.py
+│   │   └── vector_database.db
+│   ├── services/             # Core services
+│   │   ├── conversational_tutor.py
+│   │   ├── stt_service.py
+│   │   ├── tts_service.py
+│   │   ├── analyzer_tutor.py
+│   │   └── utils.py
+│   ├── server.py             # FastAPI server
+│   └── requirements.txt
+└── README.md
 ```
 
-### Requirements
-- Python 3.11+
-- Node.js 18+ and a working mobile environment if running the client (Expo)
-- macOS/Linux with a microphone (for CLI tutor)
-- For PyAudio on macOS: `brew install portaudio` before `pip install pyaudio`
+## Technology Stack
 
-Python packages used (install as needed):
-- `langchain`, `langgraph`, `langchain-google-genai`, `google-cloud-speech`, `pyaudio`, `python-dotenv`, `elevenlabs`, `langchain-milvus`, `pymilvus`, `milvus-lite`, `fastapi`, `uvicorn`
+### Mobile Client
+- **React Native** with Expo
+- **TypeScript** for type safety
+- **React Navigation** for screen management
+- **Animated API** for smooth transitions
+- **@react-native-picker/picker** for language selection
 
-### Environment variables
-Create a `.env` file in `server/services/` or export these in your shell:
-- `ELEVENLABS_API_KEY` — ElevenLabs API key (for TTS)
-- `GOOGLE_API_KEY` — Google Generative AI key (for Gemini via LangChain)
-- `GOOGLE_APPLICATION_CREDENTIALS` — absolute path to a Google Cloud service account JSON (for Speech-to-Text)
+### Backend Server
+- **Python 3.11+**
+- **FastAPI** for REST API
+- **SQLite** for data persistence
+- **Milvus** for vector database
+- **Google Cloud Speech-to-Text**
+- **ElevenLabs Text-to-Speech**
+- **Google Gemini 2.0 Flash** for AI conversations
+- **LangChain & LangGraph** for conversation management
 
-Example `.env` snippet:
-```
-ELEVENLABS_API_KEY=...
-GOOGLE_API_KEY=...
-GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service-account.json
-```
+## Requirements
 
-### Setup
-1) Install Python deps (example):
-```
+### System Requirements
+- **Python 3.11+**
+- **Node.js 18+**
+- **Expo CLI** for mobile development
+- **macOS/Linux** with microphone (for CLI tutor)
+- **iOS/Android device or simulator** for mobile app
+
+### Python Dependencies
+```bash
 pip install langchain langgraph langchain-google-genai google-cloud-speech pyaudio python-dotenv elevenlabs langchain-milvus pymilvus milvus-lite fastapi uvicorn
 ```
 
-2) Initialize the SQLite database (creates tables and indexes):
+### Node.js Dependencies
+```bash
+cd client
+npm install
 ```
+
+## Setup & Installation
+
+### 1. Backend Setup
+
+1. **Install Python dependencies**:
+```bash
+pip install -r server/requirements.txt
+```
+
+2. **Set up environment variables** (create `.env` file in `server/services/`):
+```env
+ELEVENLABS_API_KEY=your_elevenlabs_key
+GOOGLE_API_KEY=your_google_genai_key
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
+```
+
+3. **Initialize database**:
+```bash
 python server/database/setup_database.py
 ```
 
-### Run the interactive tutor (CLI)
-Runs microphone capture → STT → Gemini tutor → TTS playback, with persistence.
+### 2. Mobile Client Setup
+
+1. **Install dependencies**:
+```bash
+cd client
+npm install
 ```
+
+2. **Start development server**:
+```bash
+npx expo start
+```
+
+3. **Run on device/simulator**:
+   - Scan QR code with Expo Go app (iOS/Android)
+   - Press 'i' for iOS simulator
+   - Press 'a' for Android emulator
+
+## Running the Application
+
+### CLI Tutor (Backend)
+```bash
 python server/services/app.py
 ```
-- Enter a user id (or it will auto-generate one), then select a language by number.
-- Speak to the tutor; say `stop` to end the session.
-- After ending, the transcript is saved to SQLite, added to the vector DB, an analysis report is generated, and stored as well.
+- Enter user ID and select language
+- Speak naturally with the AI tutor
+- Say "stop" to end session and generate analysis
 
-### View conversation history
+### Mobile App (Frontend)
+```bash
+cd client
+npx expo start
 ```
-# List recent conversations and DB stats
+- Navigate through screens using the intuitive interface
+- Select language and start conversations
+- Manage profile and view conversation history
+
+### API Server
+```bash
+uvicorn server.server:app --reload
+```
+Visit `http://127.0.0.1:8000/` for API documentation.
+
+## Conversation Management
+
+### View Conversation History
+```bash
+# List all conversations
 python server/view_conversations.py list
 
-# View details for a conversation id
-python server/view_conversations.py detail 1
+# View specific conversation
+python server/view_conversations.py detail <conversation_id>
 
-# View conversations for a user id
+# View user's conversations
 python server/view_conversations.py user <user_id>
 ```
 
-### Run the API (placeholder)
-```
-uvicorn server.server:app --reload
-```
-Visit `http://127.0.0.1:8000/` to see the placeholder response.
+## Key Features
 
-### Mobile client (prototype)
-```
-cd client
-npm install
-npx expo start
-```
-- The app can record audio and play it back locally.
-- Server integration and end‑to‑end streaming on device are not implemented yet.
+### Mobile App
+- User authentication (login/signup)
+- Multi-language selection with picker wheel
+- Real-time audio recording interface
+- Chat-style conversation display
+- User profile management
+- Conversation history viewing
+- Modern, responsive UI design
 
-### Current limitations / next steps
-- The FastAPI app is a placeholder; no REST/WebSocket endpoints for live sessions yet.
-- The Expo client is not connected to the server/STT/TTS.
-- The interactive flow runs from the CLI on desktop using your microphone.
+### Backend Services
+- Interactive CLI tutor sessions
+- Speech-to-text conversion
+- AI-powered conversation responses
+- Text-to-speech synthesis
+- Conversation storage and retrieval
+- Learning progress analysis
+- Vector database for semantic search
 
-### Notes
-- Vector DB uses milvus‑lite with a local file at `server/database/vector_database.db`.
-- Conversation memory for the tutor is handled by LangGraph checkpoints in SQLite.
+## Development Status
+
+### Completed
+- Complete mobile app with all screens
+- User authentication and profile management
+- Language selection interface
+- Conversation recording interface
+- Backend CLI tutor functionality
+- Database setup and management
+- Conversation analysis and storage
+
+### In Progress
+- Mobile-backend integration
+- Real-time audio streaming
+- WebSocket communication
+- Push notifications
+
+### Planned
+- Advanced learning analytics
+- Progress tracking and goals
+- Social features and leaderboards
+- Offline mode support
+- Multi-platform deployment
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Support
+
+For issues and questions:
+1. Check the documentation
+2. Review existing issues
+3. Create a new issue with detailed information
+
+---
+
+**Audio Tutor** - Making language learning conversational and accessible!
