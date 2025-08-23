@@ -11,6 +11,14 @@ import {
   Alert,
 } from 'react-native';
 
+import {
+  useAudioRecorder,
+  AudioModule,
+  RecordingPresets,
+  setAudioModeAsync,
+  useAudioRecorderState,
+} from 'expo-audio';
+
 const { width, height } = Dimensions.get('window');
 
 interface ConversationScreenProps {

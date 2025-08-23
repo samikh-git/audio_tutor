@@ -14,11 +14,11 @@ from conversational_tutor import converse
 
 from analyzer_tutor import add_document, create_report
 
-from tts_service import speak
+from tts_service import cli_speak
 
 from langchain_core.messages import AIMessage
 
-from stt_service import transcribe
+from stt_service import cli_transcribe
 
 from datetime import datetime
 
@@ -74,7 +74,7 @@ def session():
     today = datetime.now().date()
     long_transcript = f"{today} \n"
     while True:
-            transcript = transcribe(language_tpl[1])
+            transcript = cli_transcribe(language_tpl[1])
             long_transcript += f"USERMESSAGE: {transcript} \n"
             response = ""
             chunk_response = ""
@@ -86,7 +86,7 @@ def session():
                     response += chunk.content
                     if re.search(r'[.!?:;]$', response): 
                         print(f"Tutor response:  {chunk_response}")
-                        speak(chunk_response, language_tpl[0])
+                        cli_speak(chunk_response, language_tpl[0])
                         chunk_response = ""
             long_transcript += f"AIMESSAGE: {response} \n"
     print(long_transcript)

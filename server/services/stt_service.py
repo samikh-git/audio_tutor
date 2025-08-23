@@ -146,7 +146,7 @@ def listen_print_loop(responses: object) -> str:
         if result.is_final:
             return transcript
     
-def transcribe(language: str = "en-US") -> str:
+def cli_transcribe(language: str = "en-US") -> str:
     """Perform streaming speech recognition from the default microphone.
 
     Opens a `MicrophoneStream`, sends audio to Google Cloud Speech with
@@ -188,5 +188,54 @@ def transcribe(language: str = "en-US") -> str:
         print(transcript)
         return transcript
 
+def ws_transcribe(audio_stream: bytes, language_code: str): 
+    """Perform streaming speech recognition from a WebSocket audio stream.
+
+    Processes audio data received from a WebSocket connection and performs
+    real-time speech recognition using Google Cloud Speech API. This function
+    is designed for WebSocket-based applications where audio is streamed
+    from a client rather than captured from a local microphone.
+
+    Args:
+        audio_stream (bytes): Iterator yielding audio byte chunks from WebSocket
+        language_code (str): BCP-47 language code for speech recognition (e.g., "en-US", "fr-FR")
+
+    Returns:
+        str: The transcribed text from the audio stream, or None if no speech detected
+
+    Raises:
+        Exception: If there are issues with the Google Cloud Speech API connection
+                  or audio stream processing
+
+    Note:
+        This function uses the same Google Cloud Speech configuration as the CLI
+        version but processes WebSocket audio instead of microphone input.
+    """
+    client = speech.SpeechClient()
+    config = speech.RecognitionConfig(
+        encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
+        sample_rate_hertz=RATE,
+        language_code=language_code,
+        enable_automatic_punctuation=True,
+    )
+
+    streaming_config = speech.StreamingRecognitionConfig(
+        config=config, 
+        interim_results=True, 
+        voice_activity_timeout= speech.StreamingRecognitionConfig.VoiceActivityTimeout(mapping=None, speech_end_timeout = TIMEOUT, ignore_unknown_fields=False)
+    )
+
+    requests = (
+        speech.StreamingRecognizeRequest(audio_content=content)
+        for content in audio_stream
+    ) 
+
+    responses = client.streaming_recognize(streaming_config, requests)
+
+    transcript = listen_print_loop(responses)
+    
+    return transcript
+
+
 if __name__ == "__main__":
-    transcribe("fr-FR")
+    cli_transcribe("fr-FR")

@@ -5,6 +5,7 @@ context in a SQLite checkpoint store. The `converse` function streams AI
 messages for a given user query and language.
 """
 
+import os
 import sqlite3
 from dotenv import load_dotenv
 
@@ -25,7 +26,10 @@ from typing_extensions import Annotated, TypedDict
 
 load_dotenv()
 
-db = sqlite3.connect("../database/conversation_history.db", check_same_thread=False)
+# Get the absolute path to the database file
+current_dir = os.path.dirname(os.path.abspath(__file__))
+db_path = os.path.join(current_dir, "..", "database", "conversation_history.db")
+db = sqlite3.connect(db_path, check_same_thread=False)
 
 model = init_chat_model("gemini-2.0-flash", model_provider="google_genai")
 

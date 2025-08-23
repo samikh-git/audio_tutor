@@ -1,9 +1,105 @@
+# Environment variables
 .env
- 
-tests/higgs-audio
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# React Native / Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# TypeScript
+*.tsbuildinfo
 
 # macOS system files
 .DS_Store
@@ -14,22 +110,8 @@ __pycache__/
 ehthumbs.db
 Thumbs.db
 
-# Node.js
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# React Native / Expo
-.expo/
-dist/
-web-build/
-
-# Environment variables
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Windows
+*.lnk
 
 # IDE files
 .vscode/
@@ -39,11 +121,11 @@ web-build/
 *~
 
 # Logs
-logs
+logs/
 *.log
 
 # Runtime data
-pids
+pids/
 *.pid
 *.seed
 *.pid.lock
@@ -55,3 +137,17 @@ coverage/
 tmp/
 temp/
 
+# Database files (if you want to ignore them)
+*.db
+*.sqlite
+*.sqlite3
+
+# Audio files (if you want to ignore test audio files)
+*.wav
+*.mp3
+*.m4a
+*.aac
+
+# Test data
+tests/higgs-audio/
+tests/tts_test/cloning/

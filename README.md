@@ -5,7 +5,7 @@ A comprehensive voice-first language tutoring platform with both CLI and mobile 
 ## Features
 
 ### Mobile Client (React Native)
-- **Multi-language Support**: Practice Spanish, French, German, Italian, Portuguese, Japanese, Korean, and Chinese
+- **Multi-language Support**: Practice Spanish, French, German, Italian, Japanese, and Chinese
 - **Interactive Conversations**: Real-time audio recording and playback with AI tutor responses
 - **User Profiles**: Complete user management with profile editing and password management
 - **Conversation History**: View past conversations with detailed transcripts and learning reports
@@ -144,7 +144,7 @@ npx expo start
 
 ### CLI Tutor (Backend)
 ```bash
-python server/services/app.py
+python server/services/CLI.py
 ```
 - Enter user ID and select language
 - Speak naturally with the AI tutor
@@ -178,70 +178,3 @@ python server/view_conversations.py detail <conversation_id>
 # View user's conversations
 python server/view_conversations.py user <user_id>
 ```
-
-## Key Features
-
-### Mobile App
-- User authentication (login/signup)
-- Multi-language selection with picker wheel
-- Real-time audio recording interface
-- Chat-style conversation display
-- User profile management
-- Conversation history viewing
-- Modern, responsive UI design
-
-### Backend Services
-- Interactive CLI tutor sessions
-- Speech-to-text conversion
-- AI-powered conversation responses
-- Text-to-speech synthesis
-- Conversation storage and retrieval
-- Learning progress analysis
-- Vector database for semantic search
-
-## Development Status
-
-### Completed
-- Complete mobile app with all screens
-- User authentication and profile management
-- Language selection interface
-- Conversation recording interface
-- Backend CLI tutor functionality
-- Database setup and management
-- Conversation analysis and storage
-
-### In Progress
-- Mobile-backend integration
-- Real-time audio streaming
-- WebSocket communication
-- Push notifications
-
-### Planned
-- Advanced learning analytics
-- Progress tracking and goals
-- Social features and leaderboards
-- Offline mode support
-- Multi-platform deployment
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Support
-
-For issues and questions:
-1. Check the documentation
-2. Review existing issues
-3. Create a new issue with detailed information
-
----
-
-**Audio Tutor** - Making language learning conversational and accessible!

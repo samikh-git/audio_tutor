@@ -192,5 +192,11 @@ class DatabaseManager:
             'database_size_mb': round(db_size / (1024 * 1024), 2)
         }
 
+    def log_new_user(self, user_id, password, first_name, last_name ):
+        return
+
+    def user_id_already_exists(self, user_id):
+        return
+
 # Global database manager instance
 db_manager = DatabaseManager() 

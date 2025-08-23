@@ -9,6 +9,7 @@ It exposes helper functions to add/remove documents to the vector store and a
 `create_report` function to produce a report for a given user id.
 """
 
+import os
 from dotenv import load_dotenv
 
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
@@ -59,14 +60,27 @@ llm = ChatGoogleGenerativeAI(
 
 embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
 
-URI = "../database/vector_database.db"
+# Get the absolute path to the database file
+current_dir = os.path.dirname(os.path.abspath(__file__))
+URI = os.path.join(current_dir, "..", "database", "vector_database.db")
 
-vector_store = Milvus(
-    embedding_function = embeddings, 
-    connection_args={"uri": URI},
-    index_params={"index_type": "FLAT", "metric_type": "L2"},
-    partition_key_field="namespace",
-)
+_vector_store = None
+
+def get_vector_store():
+    """Get or create the Milvus vector store instance """
+    global _vector_store
+    if _vector_store is None: 
+        try:
+            _vector_store = Milvus(
+            embedding_function = embeddings, 
+            connection_args={"uri": URI},
+            index_params={"index_type": "FLAT", "metric_type": "L2"},
+            partition_key_field="namespace",
+            )
+        except Exception as e:
+            print(f"Warning: Could not initialize vector store: {e}")
+            return None
+    return _vector_store
 
 def add_document(page_content: str, user_id: str):
     """Add a conversation transcript to the vector store under a user namespace.
@@ -75,6 +89,11 @@ def add_document(page_content: str, user_id: str):
         page_content (str): Full text of the conversation or report.
         user_id (str): Namespace used to partition documents by user.
     """
+    vector_store = get_vector_store()
+    if vector_store is None:
+        print("Warning: Vector store not available")
+        return
+    
     doc = [Document(
         page_content=page_content,
         metadata={"namespace": user_id}
@@ -88,6 +107,11 @@ def remove_document(uuid: str):
     Args:
         uuid (str): Primary key used at insert time.
     """
+    vector_store = get_vector_store()
+    if vector_store is None:
+        print("Warning: Vector store not available")
+        return
+    
     vector_store.delete(ids=[uuid])
 
 class State(TypedDict):
@@ -112,6 +136,9 @@ def retrieve(query: str, user_id: str):
         str: A serialized text with top-k retrieved conversations or a message
              indicating no data/errors.
     """
+    vector_store = get_vector_store()
+    if vector_store is None:
+        return f"Vector store not available"
     try:
         retrieved_docs = vector_store.similarity_search(query, k=5, search_kwargs={"expr": f'namespace == "{user_id}"'})
         if not retrieved_docs:
